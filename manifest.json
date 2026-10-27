@@ -1,0 +1,21 @@
+{
+  "name": "TCP Radar v6 | دستیار آموزشی تحلیل ساختار بازار و مدیریت ریسک",
+  "short_name": "TCP Radar",
+  "description": "ابزار آموزشی بررسی ساختار بازار، چارت تعاملی ۵۰۰ کندلی، عمق سفارشات و موتور واحد ریسک به ریوارد",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#060911",
+  "theme_color": "#060911",
+  "orientation": "any",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

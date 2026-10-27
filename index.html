@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#060911" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>TCP Radar v6 | دستیار آموزشی تحلیل ساختار بازار و موتور واحد مدیریت ریسک</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #060911;
+      --bg-card: #0c1220;
+      --bg-elevated: #111a2e;
+      --border-subtle: rgba(51, 65, 85, 0.55);
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: 'Vazirmatn', 'Inter', sans-serif;
+      background-color: var(--bg-main);
+      color: #f1f5f9;
+      margin: 0;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+      overflow-x: hidden;
+      font-size: 12px;
+    }
+    .ltr-num {
+      direction: ltr;
+      display: inline-block;
+      font-family: 'Inter', 'Vazirmatn', monospace;
+    }
+    .pro-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+    }
+    .glass-bar {
+      background: rgba(12, 18, 32, 0.95);
+      backdrop-filter: blur(16px);
+    }
+    .pulse-dot {
+      animation: pulse-ring 1.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #060911;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    /* Touch Target Accessibility: minimum 44px height on interactive buttons */
+    .touch-btn {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tab-btn {
+      min-height: 48px;
+    }
+    .tab-btn.active {
+      color: #f59e0b;
+      border-top: 2px solid #f59e0b;
+      background: rgba(245, 158, 11, 0.12);
+    }
+    .tf-btn.active, .bucket-btn.active, .chart-mode-btn.active {
+      background-color: #f59e0b;
+      color: #060911;
+      font-weight: 800;
+    }
+    .side-toggle-btn[data-side="long"].active {
+      background-color: #10b981;
+      color: #050811;
+      font-weight: 900;
+    }
+    .side-toggle-btn[data-side="short"].active {
+      background-color: #f43f5e;
+      color: #ffffff;
+      font-weight: 900;
+    }
+    button:disabled {
+      opacity: 0.42;
+      cursor: not-allowed !important;
+    }
+    /* Fullscreen Chart Support */
+    #chartFullscreenCard:fullscreen {
+      background-color: #050811;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    #chartFullscreenCard:fullscreen #lwcMainWrapper {
+      height: 72vh !important;
+    }
+    .tcp-pseudo-fullscreen {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 9999 !important;
+      background: #050811 !important;
+      padding: 12px !important;
+      overflow-y: auto !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-100 selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- FIRST-RUN RISK DISCLAIMER MODAL -->
+  <div id="riskDisclaimerModal" role="dialog" aria-modal="true" aria-labelledby="riskModalTitle" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="pro-card max-w-lg w-full rounded-2xl p-5 border border-amber-500/50 space-y-4">
+      <div class="flex items-center gap-2 text-amber-400">
+        <span class="text-lg" aria-hidden="true">⚠️</span>
+        <h2 id="riskModalTitle" class="text-base font-black text-white">سلب مسئولیت و هشدار ریسک مالی</h2>
+      </div>
+      <p class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+        این ابزار صرفاً آموزشی و تحلیلی است و توصیه مالی یا سیگنال قطعی نیست؛ معامله با اهرم می‌تواند به از دست رفتن کل سرمایه بینجامد؛ نتایج بک‌تست تضمین سود در آینده نیستند.
+      </p>
+      <ul class="text-xs text-slate-300 list-disc pr-5 space-y-1.5 leading-relaxed">
+        <li>تمام سطوح ورود، حد ضرر و تارگت‌ها توسط موتور واحد (<code class="ltr-num text-amber-300">computeTradePlan</code>) بر پایه ساختار پیوت‌ها، ATR و موانع واقعی محاسبه می‌شوند.</li>
+        <li>در صورت قطع دسترسی به API صرافی‌ها، هیچ داده تصادفی یا جعلی تولید نمی‌شود و ابزارهای ثبت سفارش و ژورنال غیرفعال می‌گردند.</li>
+      </ul>
+      <button type="button" id="acceptRiskModalBtn" class="touch-btn w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm py-2.5 rounded-xl transition">
+        متوجه شدم و مسئولیت کامل معاملاتم را می‌پذیرم
+      </button>
+    </div>
+  </div>
+
+  <!-- GLOBAL TOAST -->
+  <div id="globalToast" role="status" aria-live="polite" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs shadow-2xl border border-amber-300 transition-all">
+    ✓ انجام شد
+  </div>
+
+  <!-- OFFLINE / NON-LIVE RED BANNER -->
+  <div id="offlineAlertBanner" role="alert" aria-live="assertive" class="hidden bg-rose-600/95 text-white px-3 py-2 text-xs font-bold text-center border-b border-rose-400">
+    ⚠️ وضعیت داده: غیرزنده (عدم دسترسی به API صرافی‌ها در شبکه فعلی). هیچ داده تصادفی یا ساختگی جایگزین داده زنده نمی‌شود. کپی تیکت، ثبت ژورنال و ثبت آلارم غیرفعال شدند.
+  </div>
+
+  <!-- PERSISTENT EDUCATIONAL RISK BANNER -->
+  <div class="bg-slate-900/95 border-b border-slate-800 px-3 py-1.5 text-[11px] text-slate-300 text-center">
+    ⚠️ <strong>هشدار ریسک:</strong> این ابزار آموزشی است، توصیه مالی نیست؛ معامله با اهرم می‌تواند به از دست رفتن کل سرمایه بینجامد؛ بک‌تست و سناریوها تضمین سود نیستند.
+  </div>
+
+  <!-- STICKY TOP BAR -->
+  <header class="sticky top-0 z-40 glass-bar border-b border-slate-800/90 px-3 py-2">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <!-- Brand & Feed Status -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-slate-950 font-black text-sm shadow">
+          TCP
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2" aria-live="polite">
+            <h1 class="text-sm sm:text-base font-black text-white">TCP Radar v6 | موتور واحد R:R و ساختار بازار</h1>
+            <span id="connBadge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+              <span id="connDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span id="connText">در حال دریافت ۵۰۰+ کندل...</span>
+            </span>
+          </div>
+          <div class="text-[11px] text-slate-400 flex flex-wrap items-center gap-2 mt-0.5" aria-live="polite">
+            <span id="sessionBannerText">سشن فعال: در حال محاسبه...</span>
+            <span class="text-slate-700">|</span>
+            <span id="candleCountdownBadge" class="ltr-num text-cyan-300 font-bold">⏳ 00:00 تا کلوز</span>
+            <span class="text-slate-700">|</span>
+            <span id="tickCounterText" class="ltr-num text-amber-400 font-semibold">Tick #0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Controls: Side (Long/Short), Exchange Source, Symbol, Timeframe -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <!-- Unified Long / Short Toggle -->
+        <div class="flex items-center bg-slate-900 border border-slate-700 rounded-xl p-1" role="group" aria-label="انتخاب جهت معامله">
+          <button type="button" data-side="long" class="side-toggle-btn active touch-btn px-3 py-1 rounded-lg text-xs text-slate-300 transition">
+            🟢 لانگ (Long)
+          </button>
+          <button type="button" data-side="short" class="side-toggle-btn touch-btn px-3 py-1 rounded-lg text-xs text-slate-300 transition">
+            🔴 شورت (Short)
+          </button>
+        </div>
+
+        <select id="dataSourceSelect" aria-label="منبع قیمت و اردربوک" class="touch-btn bg-slate-900 border border-slate-700 text-cyan-300 text-[11px] font-bold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-cyan-500">
+          <option value="auto" selected>🌐 خودکار (Bybit ⬅ OKX ⬅ Binance)</option>
+          <option value="bybit">Bybit USDT Perpetual (.P)</option>
+          <option value="okx">OKX Swap (.P)</option>
+          <option value="binance">Binance Futures / Spot</option>
+        </select>
+
+        <select id="symbolSelect" aria-label="انتخاب نماد" class="touch-btn bg-slate-900 border border-slate-700 text-amber-400 text-xs font-extrabold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-amber-500 ltr-num">
+          <option value="BTCUSDT">BTCUSDT.P</option>
+          <option value="ETHUSDT">ETHUSDT.P</option>
+          <option value="SOLUSDT">SOLUSDT.P</option>
+          <option value="BNBUSDT">BNBUSDT.P</option>
+          <option value="XRPUSDT">XRPUSDT.P</option>
+          <option value="ADAUSDT">ADAUSDT.P</option>
+          <option value="DOGEUSDT">DOGEUSDT.P</option>
+          <option value="AVAXUSDT">AVAXUSDT.P</option>
+          <option value="SUIUSDT">SUIUSDT.P</option>
+          <option value="LINKUSDT">LINKUSDT.P</option>
+        </select>
+
+        <div class="flex items-center bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+          <input id="customSymbolInput" type="text" aria-label="افزودن نماد جدید" placeholder="+ نماد (PEPE)" class="bg-transparent text-[11px] text-white px-2.5 py-2 w-24 focus:outline-none ltr-num uppercase" />
+          <button type="button" id="addCustomSymbolBtn" aria-label="بررسی و افزودن نماد از صرافی" class="touch-btn bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-black text-xs px-3 transition">
+            +
+          </button>
+        </div>
+
+        <div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1" id="tfGroup" role="group" aria-label="انتخاب تایم‌فریم">
+          <button type="button" data-tf="1m" class="tf-btn touch-btn px-2.5 py-1 text-[11px] rounded-lg text-slate-300 transition">1m</button>
+          <button type="button" data-tf="15m" class="tf-btn active touch-btn px-2.5 py-1 text-[11px] rounded-lg text-slate-300 transition">15m</button>
+          <button type="button" data-tf="1h" class="tf-btn touch-btn px-2.5 py-1 text-[11px] rounded-lg text-slate-300 transition">1h</button>
+          <button type="button" data-tf="4h" class="tf-btn touch-btn px-2.5 py-1 text-[11px] rounded-lg text-slate-300 transition">4h</button>
+        </div>
+
+        <button type="button" id="scanBestCoinBtn" class="touch-btn bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs px-3 py-1.5 rounded-xl transition">
+          🎯 شکار بهترین کوین
+        </button>
+
+        <button type="button" id="toggleAudioAlertBtn" class="touch-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs px-3 py-1.5 rounded-xl transition">
+          🔕 زنگ هشدار: خاموش
+        </button>
+
+        <button type="button" id="openGithubModalBtn" class="touch-btn bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl shadow transition">
+          کدهای گیت‌هاب Pages
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- EXECUTIVE SUMMARY & UNIFIED ORDER TICKET BANNER -->
+  <section class="max-w-7xl mx-auto px-3 pt-3">
+    <div class="pro-card rounded-2xl p-4 border-amber-500/30 space-y-3">
+
+      <!-- Top Row: Live Price + 3 Cycles -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center border-b border-slate-800/80 pb-3">
+        <div class="lg:col-span-4 flex items-center justify-between sm:justify-start gap-4">
+          <div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span id="activeSymbolLabel" class="text-xs font-black px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 ltr-num">BTCUSDT.P</span>
+              <span id="activeTfBadge" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-semibold">تایم ورود: 15m</span>
+              <span id="ticketSideBadge" class="px-2.5 py-0.5 rounded-lg font-black text-xs ltr-num bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">LONG 🟢</span>
+            </div>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span id="livePriceDisplay" class="text-2xl sm:text-3xl font-black tracking-tight text-white ltr-num">--</span>
+              <span id="liveChangeBadge" class="text-xs font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 ltr-num">--</span>
+              <span id="btcPairLiveBadge" class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 ltr-num">BTC Pair: --</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-4 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] bg-slate-900/70 p-2.5 rounded-xl border border-slate-800/80">
+          <div class="text-slate-400">مقاومت ماژور: <span id="statHigh24" class="text-slate-100 font-bold ltr-num">--</span></div>
+          <div class="text-slate-400">حمایت ماژور: <span id="statLow24" class="text-slate-100 font-bold ltr-num">--</span></div>
+          <div class="text-slate-400">حجم ۲۴ساعته: <span id="statVol24" class="text-amber-400 font-bold ltr-num">--</span></div>
+          <div class="text-slate-400">توازن کندل فعلی: <span id="statBuyerPower" class="text-emerald-400 font-bold">--</span></div>
+        </div>
+
+        <div class="lg:col-span-4 grid grid-cols-3 gap-2">
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl px-2 py-1.5 text-center">
+            <div class="text-[11px] text-slate-400">موج بزرگ (HWC)</div>
+            <div id="hwcStatusPill" class="text-xs font-extrabold text-emerald-400 mt-0.5">--</div>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl px-2 py-1.5 text-center">
+            <div class="text-[11px] text-slate-400">موج میانی (MWC)</div>
+            <div id="mwcStatusPill" class="text-xs font-extrabold text-amber-400 mt-0.5">--</div>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl px-2 py-1.5 text-center">
+            <div class="text-[11px] text-slate-400">موج کوچک (LWC)</div>
+            <div id="lwcStatusPill" class="text-xs font-extrabold text-emerald-400 mt-0.5">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second Row: Narrative + Unified One-Tap Copy Ticket (100% driven by computeTradePlan) -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div class="flex items-start gap-3 flex-1">
+          <div class="shrink-0 w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/40 flex flex-col items-center justify-center text-amber-400" aria-hidden="true">
+            <span class="text-sm">📡</span>
+            <span class="text-[11px] font-black">TCP</span>
+          </div>
+          <div class="flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-extrabold text-amber-400">خروجی موتور واحد ریسک به ریوارد (بدون پیش‌بینی قطعی):</span>
+              <span id="ticketQualityBadge" class="px-2.5 py-0.5 rounded-lg bg-slate-800 text-slate-300 font-black text-[11px]">در حال محاسبه...</span>
+              <span id="visaWarningBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
+                بررسی انضباطی...
+              </span>
+              <span id="routineFinalCommand" class="text-[11px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold">
+                در حال بررسی...
+              </span>
+            </div>
+            <p id="arshiaLiveNarrative" class="text-xs sm:text-sm text-slate-100 leading-relaxed mt-1 font-medium">
+              در حال دریافت کندل‌های زنده صرافی و محاسبه سطوح ساختاری...
+            </p>
+          </div>
+        </div>
+
+        <!-- Unified One-Tap Copy Order Ticket -->
+        <div class="flex flex-wrap items-center gap-1.5 shrink-0 bg-slate-950/90 p-2 rounded-xl border border-slate-800">
+          <button type="button" id="copyTicketEntryBtn" class="touch-btn px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-bold text-[11px] transition" title="کپی سطح ورود">
+            📋 <span id="ticketEntryTypeLabel" class="ml-1">Stop-Buy:</span> <span id="ticketEntryVal" class="ltr-num">--</span>
+          </button>
+          <button type="button" id="copyTicketSlBtn" class="touch-btn px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-bold text-[11px] transition" title="کپی حد ضرر ساختاری">
+            📋 حد ضرر (SL): <span id="ticketSlVal" class="ltr-num ml-1">--</span>
+          </button>
+          <button type="button" id="copyTicketTpBtn" class="touch-btn px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-[11px] transition" title="کپی تارگت مانع اول">
+            📋 تارگت مانع اول: <span id="ticketTpVal" class="ltr-num ml-1">--</span>
+          </button>
+          <button type="button" id="copyTicketSizeBtn" class="touch-btn px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 font-bold text-[11px] transition" title="کپی حجم مجاز پس از کارمزد">
+            📋 حجم مجاز: <span id="ticketSizeVal" class="ltr-num ml-1">--</span>
+          </button>
+          <button type="button" id="sendSetupToCalcBtn" class="touch-btn px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] transition">
+            ⚡ مشاهده جزئیات در ماشین‌حساب
+          </button>
+        </div>
+      </div>
+
+      <!-- Compact 5-Step Daily Routine Strip -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1 text-[11px]" id="routineStepsBar">
+        <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800/80 flex justify-between items-center">
+          <span class="text-slate-400">۱. ساختار کلی:</span>
+          <strong id="step1Status" class="text-white">--</strong>
+        </div>
+        <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800/80 flex justify-between items-center">
+          <span class="text-slate-400">۲. دامیننس:</span>
+          <strong id="step2Status" class="text-cyan-300">--</strong>
+        </div>
+        <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800/80 flex justify-between items-center">
+          <span class="text-slate-400">۳. پیر BTC:</span>
+          <strong id="step3Status" class="text-amber-300">--</strong>
+        </div>
+        <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800/80 flex justify-between items-center">
+          <span class="text-slate-400">۴. تاچ و حجم:</span>
+          <strong id="step4Status" class="text-emerald-300">--</strong>
+        </div>
+        <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800/80 flex justify-between items-center col-span-2 sm:col-span-1">
+          <span class="text-slate-400">۵. ورود و R:R:</span>
+          <strong id="step5Status" class="text-purple-300 ltr-num">--</strong>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- MAIN WORKSPACE TABS -->
+  <main class="max-w-7xl mx-auto px-3 mt-3 space-y-4">
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: PROFESSIONAL INTERACTIVE CHART & RADAR -->
+    <!-- =================================================================== -->
+    <section id="view-radar" class="tab-view space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- Left 8 Cols: Interactive Lightweight Charts + Synchronized RSI + Backtester -->
+        <div id="chartFullscreenCard" class="lg:col-span-8 pro-card rounded-2xl p-3.5 space-y-3">
+
+          <!-- Chart Mode & Action Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div class="flex flex-wrap items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
+              <button type="button" id="modeTcpCanvasBtn" class="chart-mode-btn active touch-btn px-3 py-1 rounded-lg text-xs transition">
+                📐 چارت تعاملی TCP (Lightweight Charts + باکس R:R قابل درگ)
+              </button>
+              <button type="button" id="modeTvWidgetBtn" class="chart-mode-btn touch-btn px-3 py-1 rounded-lg text-xs text-slate-300 transition">
+                📺 ویجت رسمی TradingView (.P)
+              </button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+              <select id="chartTimezoneSelect" aria-label="تایم‌زون محور زمان" class="touch-btn bg-slate-900 border border-slate-700 text-amber-300 rounded-xl px-2.5 py-1 font-bold">
+                <option value="Asia/Tehran" selected>🕒 وقت تهران (Asia/Tehran)</option>
+                <option value="UTC">🕒 وقت جهانی (UTC)</option>
+              </select>
+              <button type="button" id="scrollToNowBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-bold" title="اسکرول به کندل لحظه حال">
+                ⏭️ لحظه حال
+              </button>
+              <button type="button" id="resetStructuralLevelsBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 font-bold" title="بازنشانی خطوط درگ‌شده به فرمول ساختاری">
+                🎯 بازنشانی خطوط R:R
+              </button>
+              <button type="button" id="fullscreenChartBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-bold" title="نمایش تمام‌صفحه چارت">
+                ⛶ تمام‌صفحه
+              </button>
+              <button type="button" id="simulateTickBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700" title="دریافت مجدد از صرافی">
+                🔄 رفرش داده
+              </button>
+            </div>
+          </div>
+
+          <!-- Layer Toggles Bar (Saved in localStorage) -->
+          <div class="flex flex-wrap items-center gap-1.5 text-[11px]" id="tcpChartControls">
+            <button type="button" id="toggleLogScaleBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+              لگاریتمی (Log) ✓
+            </button>
+            <button type="button" id="togglePercentScaleBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 font-bold">
+              درصدی (%) ✕
+            </button>
+            <button type="button" id="toggleSmaBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold">
+              SMA 7/25/99 ✓
+            </button>
+            <button type="button" id="toggleSrBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold">
+              حمایت/مقاومت ✓
+            </button>
+            <button type="button" id="toggleFibBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 font-semibold">
+              فیبوناچی ✓
+            </button>
+            <button type="button" id="toggleVolBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold">
+              حجم ✓
+            </button>
+            <button type="button" id="toggleObWallsBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30 font-semibold">
+              دیوار اردربوک ✓
+            </button>
+            <button type="button" id="toggleSignalsBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">
+              سیگنال‌ها ✓
+            </button>
+            <button type="button" id="toggleSessionsBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-sky-500/15 text-sky-300 border border-sky-500/30 font-semibold">
+              سشن‌ها ✓
+            </button>
+            <button type="button" id="toggleAdxBtn" class="touch-btn px-2.5 py-1 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 font-semibold">
+              ADX ✕
+            </button>
+          </div>
+
+          <!-- SMA Legend & Status Strip -->
+          <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800">
+            <div class="flex flex-wrap items-center gap-3">
+              <span><span class="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block ml-1"></span>SMA 7: <strong id="valSma7" class="ltr-num text-yellow-300">--</strong></span>
+              <span><span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block ml-1"></span>SMA 25: <strong id="valSma25" class="ltr-num text-cyan-300">--</strong></span>
+              <span><span class="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block ml-1"></span>SMA 99: <strong id="valSma99" class="ltr-num text-purple-300">--</strong></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span>وضعیت میانگین‌ها: <strong id="smaConditionText" class="text-emerald-400">--</strong></span>
+              <span class="text-slate-600">|</span>
+              <span>فاصله از SMA99: <strong id="sma99DistText" class="ltr-num text-slate-200">--</strong></span>
+            </div>
+          </div>
+
+          <!-- Crosshair OHLCV Inspector + Bar Replay -->
+          <div id="chartHoverInspector" class="text-[11px] bg-slate-950/90 border border-slate-800/80 rounded-xl px-3 py-1.5 text-slate-300 flex flex-wrap items-center justify-between gap-2">
+            <span id="hoverCandleMetrics" class="ltr-num text-slate-200 font-medium">🔍 کراس‌هیر را روی چارت حرکت دهید یا دستگیره‌های ⇅ ورود/استاپ را درگ کنید</span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" id="replayBackBtn" class="touch-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold">⏪ کندل قبل</button>
+              <button type="button" id="replayForwardBtn" class="touch-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold">کندل بعد ⏩</button>
+              <button type="button" id="replayResetBtn" class="touch-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold">زنده 🔴</button>
+            </div>
+          </div>
+
+          <!-- Synchronized Lightweight Charts Workspace (Main Panel >= 60vh on mobile + RSI Panel) -->
+          <div id="tcpChartWorkspace" class="space-y-2">
+            <div id="lwcMainWrapper" class="relative w-full min-h-[60vh] sm:min-h-[440px] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+              <div id="lwcMainContainer" class="w-full h-[60vh] sm:h-[440px]"></div>
+              <canvas id="chartOverlayCanvas" class="absolute inset-0 pointer-events-none z-10"></canvas>
+            </div>
+
+            <!-- Synchronized RSI + ADX Sub-Panel -->
+            <div class="bg-slate-950/90 rounded-xl p-2.5 border border-slate-800">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5 text-[11px]">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-amber-400">پنل همگام RSI (30 / 50 / 70) + ADX:</span>
+                  <span id="rsiValueLabel" class="ltr-num font-extrabold text-white px-2 py-0.5 rounded bg-slate-800">--</span>
+                  <span id="rsiSignalBadge" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">--</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label for="rsiPeriodSelect" class="text-slate-400">دوره RSI:</label>
+                  <select id="rsiPeriodSelect" class="touch-btn bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-amber-300 ltr-num">
+                    <option value="auto" selected>Auto Cycle (نیم‌سایکل زوج)</option>
+                    <option value="14">14 (استاندارد)</option>
+                    <option value="22">22 (سایکل ۴۴ کندلی)</option>
+                    <option value="56">56 (معادل ۱ساعته روی ۱۵دقیقه: 14×4)</option>
+                  </select>
+                </div>
+              </div>
+              <div id="lwcRsiContainer" class="relative w-full h-32"></div>
+            </div>
+          </div>
+
+          <!-- TradingView Official Widget Wrapper (Hidden by default) -->
+          <div id="tvWidgetWrapper" class="hidden relative h-[60vh] sm:h-[480px] w-full bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+            <iframe id="tvIframe" title="TradingView Live Chart" class="w-full h-full border-0" src="about:blank" allowfullscreen></iframe>
+          </div>
+
+          <!-- Bottom Row Under Chart: Taker Delta + Upgraded 500+ Candle Backtester -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <!-- Taker Delta Bot (5 Cols) -->
+            <div class="md:col-span-5 bg-slate-900/90 rounded-xl p-3 border border-amber-500/25 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-extrabold text-amber-400">📊 تفکیک حجم خرید/فروش (<span id="takerSourcePrecisionTag">تخمینی/زنده</span>)</span>
+                <span id="deltaBotVerdictBadge" class="text-[11px] font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 ltr-num">Delta: --</span>
+              </div>
+              <div class="grid grid-cols-3 gap-1.5 text-[11px] text-center">
+                <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                  <div class="text-slate-400">حجم خرید</div>
+                  <div id="takerBuyVolText" class="font-bold text-emerald-400 ltr-num mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                  <div class="text-slate-400">حجم فروش</div>
+                  <div id="takerSellVolText" class="font-bold text-rose-400 ltr-num mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                  <div class="text-slate-400">نسبت ۵ کندل</div>
+                  <div id="fiveCandleDeltaText" class="font-bold text-cyan-300 ltr-num mt-0.5">--</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upgraded 500+ Candle Backtester (7 Cols) -->
+            <div class="md:col-span-7 bg-slate-900/90 rounded-xl p-3 border border-cyan-500/25 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-1.5">
+                <span class="text-xs font-extrabold text-cyan-400">📈 بک‌تست ۵۰۰+ کندل (با کارمزد، اسلیپیج و R متغیر موتور)</span>
+                <div class="flex flex-wrap items-center gap-1 text-[11px]">
+                  <select id="btSideSelect" aria-label="جهت بک‌تست" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-white">
+                    <option value="both" selected>لانگ + شورت</option>
+                    <option value="long">فقط لانگ</option>
+                    <option value="short">فقط شورت</option>
+                  </select>
+                  <select id="btConflictModeSelect" aria-label="حل برخورد همزمان SL و TP در یک کندل" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-amber-300">
+                    <option value="conservative" selected>برخورد همزمان: محافظه‌کارانه (SL)</option>
+                    <option value="open_proximity">برخورد همزمان: نزدیکی به Open</option>
+                    <option value="skip">برخورد همزمان: حذف کندل مبهم</option>
+                  </select>
+                  <button type="button" id="runBacktestBtn" class="touch-btn px-2.5 py-1 rounded-lg bg-cyan-500 text-slate-950 font-black">▶️ اجرا</button>
+                </div>
+              </div>
+
+              <!-- Low Sample Statistical Warning (< 30 trades) -->
+              <div id="btLowSampleWarning" class="hidden px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold">
+                ⚠️ هشدار آماری: تعداد معاملات نمونه کمتر از ۳۰ است (نمونه کم، بی‌اعتبار آماری).
+              </div>
+
+              <div class="grid grid-cols-4 sm:grid-cols-7 gap-1 text-center text-[10px]">
+                <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                  <div class="text-slate-400">معاملات</div>
+                  <div id="btTotalTrades" class="font-bold text-white ltr-num mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                  <div class="text-slate-400">وین‌ریت</div>
+                  <div id="btWinRate" class="font-bold text-emerald-400 ltr-num mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                  <div class="text-slate-400">Expectancy</div>
+                  <div id="btAvgR" class="font-bold text-cyan-300 ltr-num mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                  <div class="text-slate-400">Profit Factor</div>
+                  <div id="btProfitFactor" class="font-bold text-amber-300 ltr-num mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                  <div class="text-slate-400">Max DD (R)</div>
+                  <div id="btMaxDrawdown" class="font-bold text-rose-400 ltr-num mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                  <div class="text-slate-400">استریک باخت</div>
+                  <div id="btMaxLossStreak" class="font-bold text-rose-300 ltr-num mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-950 p-1.5 rounded border border-slate-800 col-span-2 sm:col-span-1">
+                  <div class="text-slate-400">برآیند (R)</div>
+                  <div id="btNetReturn" class="font-bold text-emerald-400 ltr-num mt-0.5">--</div>
+                </div>
+              </div>
+
+              <!-- Equity Curve in R -->
+              <div class="relative h-20 w-full bg-slate-950 rounded-lg border border-slate-800 p-1">
+                <canvas id="btEquityCanvas" class="w-full h-full block"></canvas>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right 4 Cols: Candle Anatomy, Stop-Clusters, Volume/DMI, Alerts -->
+        <div class="lg:col-span-4 space-y-3.5">
+
+          <!-- Card 1: Candle Anatomy -->
+          <div class="pro-card rounded-2xl p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs sm:text-sm font-extrabold text-amber-400">۱. کالبدشکافی کندل (توازن خریدار و فروشنده)</h3>
+              <span id="lastCandleTag" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">--</span>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] font-bold mb-1">
+                <span class="text-emerald-400" id="bullPowerLabel">زور خریدار: --</span>
+                <span class="text-rose-400" id="bearPowerLabel">زور فروشنده: --</span>
+              </div>
+              <div class="w-full h-2.5 rounded-full bg-rose-500/30 overflow-hidden flex border border-slate-700">
+                <div id="bullPowerBar" class="bg-gradient-to-l from-emerald-400 to-emerald-600 h-full transition-all duration-300" style="width: 50%"></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 text-[11px] bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+              <div>بدنه به کل: <strong id="candleBodyRatio" class="ltr-num text-white">--</strong></div>
+              <div>سایز به میانگین: <strong id="candleSizeVsAvg" class="ltr-num text-amber-400">--</strong></div>
+              <div>شدوی بالا: <strong id="candleUpperWick" class="ltr-num text-rose-300">--</strong></div>
+              <div>شدوی پایین: <strong id="candleLowerWick" class="ltr-num text-emerald-300">--</strong></div>
+            </div>
+            <p id="candleRuleExplanation" class="text-[11px] text-slate-300 bg-slate-900/90 p-2 rounded-lg border-r-2 border-amber-500 leading-relaxed"></p>
+          </div>
+
+          <!-- Card 2: Liquidity & Stop-Cluster Analysis -->
+          <div class="pro-card rounded-2xl p-3.5 border-rose-500/30 space-y-2">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs sm:text-sm font-extrabold text-rose-400">۲. ناحیه تجمع حد ضررها و شکست ساختار</h3>
+              <span class="text-[11px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">نقدینگی سقف/کف</span>
+            </div>
+            <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1.5 text-xs">
+              <div class="flex justify-between">
+                <span class="text-slate-400">سطح کلیدی شکست فعلی:</span>
+                <strong id="smTrapLevelText" class="ltr-num text-amber-400">--</strong>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">وضعیت مومنتوم موج:</span>
+                <strong id="elliottTrapText" class="text-emerald-400">--</strong>
+              </div>
+              <p class="text-[11px] text-slate-300 pt-1 border-t border-slate-800 leading-relaxed">
+                ورود ساختاری با فاصله <code class="ltr-num text-amber-300">0.1×ATR</code> پس از سطح شکست و حد ضرر با فاصله <code class="ltr-num text-amber-300">0.25×ATR</code> پشت پیوت معتبر قبلی محاسبه می‌شود.
+              </p>
+            </div>
+          </div>
+
+          <!-- Card 3: Volume 4 States + Wilder DMI/ADX/ROC -->
+          <div class="pro-card rounded-2xl p-3.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs sm:text-sm font-extrabold text-cyan-400">۳. تحلیل حجم + Wilder DMI / ADX / ROC</h3>
+              <span id="volStatusBadge" class="text-[11px] font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300">--</span>
+            </div>
+            <div class="text-[11px] space-y-1 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+              <div class="flex justify-between"><span class="text-slate-400">حجم به میانگین ۲۰ کندل:</span><strong id="volRatioText" class="ltr-num text-white">--</strong></div>
+              <div class="flex justify-between"><span class="text-slate-400">وضعیت ۴ حالت حجم:</span><strong id="volFourStateText" class="text-emerald-400">--</strong></div>
+              <div class="flex justify-between"><span class="text-slate-400">بازه پیوت فعلی:</span><strong id="volBoxRangeText" class="ltr-num text-amber-300">--</strong></div>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 text-center text-[11px] bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+              <div><span class="text-slate-400 block">ADX (14)</span><strong id="valAdx" class="ltr-num text-white">--</strong></div>
+              <div><span class="text-slate-400 block">+DI / -DI</span><strong id="valDiCross" class="ltr-num text-emerald-400">--</strong></div>
+              <div><span class="text-slate-400 block">ROC (10)</span><strong id="valRoc" class="ltr-num text-emerald-400">--</strong></div>
+            </div>
+          </div>
+
+          <!-- Card 4: Directional Price Alerts -->
+          <div class="pro-card rounded-2xl p-3.5 border-amber-500/25 space-y-2">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-extrabold text-amber-400">۴. آلارم عبور قیمت (Directional Alert)</h3>
+              <button type="button" id="autoSetBreakoutAlertBtn" class="touch-btn text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 font-bold">+ آلارم روی نقطه ورود</button>
+            </div>
+            <div class="flex gap-1.5 text-xs">
+              <input id="alertPriceInput" type="number" step="any" aria-label="قیمت هدف برای آلارم" placeholder="قیمت آلارم..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-white ltr-num focus:outline-none" />
+              <button type="button" id="addPriceAlertBtn" class="touch-btn bg-amber-500 text-slate-950 font-black px-3 py-1.5 rounded-xl">ثبت آلارم</button>
+            </div>
+            <div id="activeAlertsList" class="space-y-1 text-[11px] max-h-28 overflow-y-auto"></div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: DISCIPLINE GATES, CHECKLIST & SCENARIOS -->
+    <!-- =================================================================== -->
+    <section id="view-scenario" class="tab-view hidden space-y-4">
+      <div class="pro-card rounded-2xl p-4 border-amber-500/40 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-base font-black text-amber-400">🧠 کنترل انضباط معاملاتی و قفل‌های پلن مکتوب</h2>
+            <p class="text-xs text-slate-300 mt-0.5">
+              بررسی وضعیت هیجانی، جلوگیری از معاملات انتقامی (Overtrading) و بررسی واقعی شرط R:R ≥ 2 تا اولین مانع
+            </p>
+          </div>
+          <span id="hardGateGlobalBadge" class="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            وضعیت پلن مکتوب: شرایط برقرار است ✓
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <!-- Counter 1: Daily Stops -->
+          <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-white">۱. کنتور حد ضررهای روزانه (ذخیره پایدار)</span>
+              <span id="tiltStatusBadge" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[11px] font-bold">نرمال</span>
+            </div>
+            <p class="text-[11px] text-slate-400">
+              در صورت ثبت ۲ استاپ در یک روز (یا ثبت باخت در ژورنال)، سیستم برای جلوگیری از معاملات انتقامی قفل می‌شود.
+            </p>
+            <div class="flex items-center justify-between pt-1">
+              <span>تعداد استاپ‌های امروز شما:</span>
+              <div class="flex items-center gap-2">
+                <button type="button" id="decStopCountBtn" aria-label="کاهش تعداد استاپ امروز" class="touch-btn w-11 h-11 rounded-xl bg-slate-800 text-white font-bold text-sm">-</button>
+                <strong id="todayStopsCountLabel" class="ltr-num text-base text-amber-400 px-2">0</strong>
+                <button type="button" id="incStopCountBtn" aria-label="افزایش تعداد استاپ امروز" class="touch-btn w-11 h-11 rounded-xl bg-rose-500/30 text-rose-300 font-bold text-sm">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Counter 2: Risk & Bias Checklist -->
+          <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-2">
+            <div class="font-extrabold text-cyan-400">۲. کنترل خطاهای رایج رفتاری</div>
+            <div class="space-y-2 text-[11px] text-slate-300">
+              <label class="flex items-center gap-2 cursor-pointer min-h-[32px]">
+                <input type="checkbox" id="psychNoBagHold" checked class="w-4 h-4 accent-cyan-400" />
+                <span>در پوزیشن ضررده حد ضرر را حذف نکرده‌ام.</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer min-h-[32px]">
+                <input type="checkbox" id="psychCoinFlipAccept" checked class="w-4 h-4 accent-cyan-400" />
+                <span>نتیجه هر معامله مستقل را احتمالی می‌دانم و تعصب جهتی ندارم.</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer min-h-[32px]">
+                <input type="checkbox" id="psychNotForcing7Pct" checked class="w-4 h-4 accent-cyan-400" />
+                <span>بدون شکل‌گیری ستاپ و R:R کافی، وارد معامله نمی‌شوم.</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Counter 3: The 4 Hard Gates -->
+          <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-2">
+            <div class="font-extrabold text-amber-400">۳. چهار پیش‌شرط پلن مکتوب</div>
+            <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer min-h-[28px]">
+              <input type="checkbox" id="gatePhysicalReady" checked class="w-4 h-4 accent-amber-500" />
+              <span>تمرکز کافی دارم و در شرایط خستگی یا تنش نیستم.</span>
+            </label>
+            <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer min-h-[28px]">
+              <input type="checkbox" id="gateNoThreeWaveClimax" checked class="w-4 h-4 accent-amber-500" />
+              <span>کندل فعلی، کندل هیجانی در انتهای موج سوم نیست.</span>
+            </label>
+            <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer min-h-[28px]">
+              <input type="checkbox" id="gateHtfNotRange" checked class="w-4 h-4 accent-amber-500" />
+              <span>تایم‌فریم بالاتر در وضعیت رنج فشرده قرار ندارد.</span>
+            </label>
+            <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer min-h-[28px]">
+              <input type="checkbox" id="gateNotCounterTrend" checked class="w-4 h-4 accent-amber-500" />
+              <span>معامله در خلاف جهت روند اصلی تایم بالاتر نیست.</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-6 pro-card rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div>
+              <h2 class="text-base font-extrabold text-white">چک‌لیست ۱۰ امتیازی ارزیابی ستاپ (متصل به موتور R:R)</h2>
+              <p class="text-xs text-slate-400">ردیف ۱۰ واقعاً نسبت R:R تا اولین مانع واقعی را از <code class="ltr-num text-amber-300">computeTradePlan</code> بررسی می‌کند</p>
+            </div>
+            <div class="text-left">
+              <div id="checklistTotalScore" class="text-2xl font-black text-amber-400 ltr-num">-- / 10</div>
+              <div id="checklistVerdictBadge" class="text-[11px] font-bold text-emerald-400">--</div>
+            </div>
+          </div>
+          <div id="checklistItemsContainer" class="space-y-2 text-xs"></div>
+        </div>
+
+        <div class="lg:col-span-6 space-y-4">
+          <div class="pro-card rounded-2xl p-4 space-y-3 border-amber-500/30">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-extrabold text-amber-400">موتور سناریونویسی (لانگ، شورت، رنج)</h2>
+              <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 font-bold">واکنش شرطی به سطوح</span>
+            </div>
+            <div id="scenariosListContainer" class="space-y-2.5"></div>
+          </div>
+
+          <div class="pro-card rounded-2xl p-4 space-y-3">
+            <h3 class="text-sm font-bold text-white">ماتریس سایکل‌ها (HWC / MWC / LWC) و ATR</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs" id="cycleCardsGrid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: AGGREGATED ORDER BOOK & SESSIONS (100% Unified with Trade Plan) -->
+    <!-- =================================================================== -->
+    <section id="view-orderbook" class="tab-view hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-7 pro-card rounded-2xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div>
+              <h2 class="text-base font-extrabold text-white">اردربوک تجمیعی صرافی و دیوارهای عرضه/تقاضا</h2>
+              <p class="text-xs text-slate-400">
+                اعداد ورود، تارگت و استاپ این بخش مستقیماً از موتور واحد <code class="ltr-num text-amber-300">computeTradePlan</code> خوانده می‌شوند
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <div class="flex items-center bg-slate-900 border border-slate-700 rounded-xl p-1 text-[11px]" id="obBucketGroup">
+                <button type="button" data-bucket="10" class="bucket-btn touch-btn px-2.5 py-1 rounded-lg text-slate-300">پله 0.1%</button>
+                <button type="button" data-bucket="50" class="bucket-btn active touch-btn px-2.5 py-1 rounded-lg text-slate-300">پله 0.25%</button>
+                <button type="button" data-bucket="100" class="bucket-btn touch-btn px-2.5 py-1 rounded-lg text-slate-300">پله 0.5%</button>
+              </div>
+              <button type="button" id="fetchRealObBtn" class="touch-btn px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition">
+                🔄 بروزرسانی عمق بازار
+              </button>
+              <button type="button" id="snapshotObBtn" class="touch-btn px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold transition">
+                📸 اسکرین‌شات مقایسه
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-slate-900/90 p-3 rounded-xl border border-amber-500/30">
+            <div class="border-l border-slate-800 pl-2">
+              <div id="obEntryTypeTitle" class="text-[11px] text-slate-400">سطح پیشنهادی ورود:</div>
+              <div id="obStopBuyPrice" class="text-sm font-black text-emerald-400 ltr-num mt-0.5">--</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">دقیقاً منطبق با تیکت و چارت</div>
+            </div>
+            <div class="border-l border-slate-800 pl-2">
+              <div class="text-[11px] text-slate-400">تارگت اول (قبل از اولین مانع واقعی):</div>
+              <div id="obSafeTargetPrice" class="text-sm font-black text-amber-400 ltr-num mt-0.5">--</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">کمی قبل از دیوار/پیوت مقابل</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400">سطح حد ضرر ساختاری (SL):</div>
+              <div id="obSafeStopLoss" class="text-sm font-black text-rose-400 ltr-num mt-0.5">--</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">پشت پیوت معتبر و دیوار تقاضا</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="bg-slate-950/90 rounded-xl p-3 border border-rose-500/20">
+              <div class="flex justify-between font-bold text-rose-400 pb-1.5 border-b border-slate-800">
+                <span>پله‌های تجمیعی فروش (Asks)</span>
+                <span>حجم پله / جمع کل (USDT)</span>
+              </div>
+              <div id="obAsksList" class="space-y-1.5 mt-2"></div>
+            </div>
+
+            <div class="bg-slate-950/90 rounded-xl p-3 border border-emerald-500/20">
+              <div class="flex justify-between font-bold text-emerald-400 pb-1.5 border-b border-slate-800">
+                <span>پله‌های تجمیعی خرید (Bids)</span>
+                <span>حجم پله / جمع کل (USDT)</span>
+              </div>
+              <div id="obBidsList" class="space-y-1.5 mt-2"></div>
+            </div>
+          </div>
+          <p id="obSnapshotNote" class="text-[11px] text-cyan-300 hidden"></p>
+        </div>
+
+        <div class="lg:col-span-5 space-y-4">
+          <div class="pro-card rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-extrabold text-amber-400">پایش سشن‌های معاملاتی (Market Sessions)</h3>
+              <span id="utcClockLabel" class="text-xs font-mono text-slate-300 ltr-num">UTC --:--</span>
+            </div>
+            <div id="sessionsContainer" class="space-y-2.5 text-xs"></div>
+
+            <div class="bg-slate-900/90 p-3 rounded-xl border border-amber-500/30 space-y-1.5 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-amber-400">محدوده سشن و پیوت فعلی (Session ORB):</span>
+                <span id="orbStatusBadge" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[11px] font-bold">--</span>
+              </div>
+              <div class="flex justify-between text-[11px] text-slate-300">
+                <span>سقف محدوده: <strong id="orbHighText" class="ltr-num text-white">--</strong></span>
+                <span>کف محدوده: <strong id="orbLowText" class="ltr-num text-white">--</strong></span>
+              </div>
+            </div>
+
+            <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-purple-400">وضعیت شدو و حجم انتهای موج (Liquidity Grab):</span>
+                <span id="liqGrabBadge" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px]">--</span>
+              </div>
+              <p id="liqGrabDesc" class="text-[11px] text-slate-300 leading-relaxed"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: DOMINANCE & BTC PAIRS -->
+    <!-- =================================================================== -->
+    <section id="view-macro" class="tab-view hidden space-y-4">
+      <div class="pro-card rounded-2xl p-4 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-base font-extrabold text-white">ماتریس دامیننس‌ها (BTC.D / USDT.D / TOTAL2 / ETHBTC)</h2>
+            <p class="text-xs text-slate-400">
+              بررسی سهم بازار بیت‌کوین، تتر و ارزش آلت‌کوین‌ها جهت تحلیل جریان نقدینگی
+            </p>
+          </div>
+          <div id="macroActionBanner" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold">
+            وضعیت کلان: بررسی قدرت نسبی در برابر BTC
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="macroGaugesGrid"></div>
+
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <span class="text-slate-300 font-bold">🎛️ شبیه‌ساز آموزشی حالت‌های دامیننس:</span>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" data-macro-mode="altseason" class="macro-mode-btn touch-btn px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[11px]">
+              ۱. بیت صعودی + BTC.D نزولی (ورود نقدینگی به آلت‌ها)
+            </button>
+            <button type="button" data-macro-mode="btconly" class="macro-mode-btn touch-btn px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[11px]">
+              ۲. بیت صعودی + BTC.D صعودی (تمرکز روی BTC)
+            </button>
+            <button type="button" data-macro-mode="dump" class="macro-mode-btn touch-btn px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold text-[11px]">
+              ۳. بیت نزولی + USDT.D صعودی (خروج پول به تتر)
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-1">
+          <h3 class="text-sm font-extrabold text-amber-400 mb-2">واچ‌لیست مقایسه قدرت نسبی به بیت‌کوین (فیلتر حجم &gt; 1000 BTC)</h3>
+          <div class="overflow-x-auto rounded-xl border border-slate-800">
+            <table class="w-full text-right text-xs">
+              <thead class="bg-slate-900/95 text-slate-400 border-b border-slate-800">
+                <tr>
+                  <th class="py-2.5 px-3">نماد (.P)</th>
+                  <th class="py-2.5 px-3">قیمت (USDT)</th>
+                  <th class="py-2.5 px-3">تغییر ۲۴ساعته</th>
+                  <th class="py-2.5 px-3">قدرت به پیر BTC</th>
+                  <th class="py-2.5 px-3">نسبت به ETH</th>
+                  <th class="py-2.5 px-3">حجم ۲۴ساعته</th>
+                  <th class="py-2.5 px-3">تعداد تاچ سطح</th>
+                  <th class="py-2.5 px-3">امتیاز نسبی</th>
+                  <th class="py-2.5 px-3">عملیات</th>
+                </tr>
+              </thead>
+              <tbody id="btcPairsTableBody" class="divide-y divide-slate-800/70 bg-slate-950/60"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 5: UNIFIED RISK CALCULATOR, STAGED PROFIT, JOURNAL & EQUITY CURVE -->
+    <!-- =================================================================== -->
+    <section id="view-calculator" class="tab-view hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- Left 7 Cols: Unified Calculator & Staged Profit Taking -->
+        <div class="lg:col-span-7 pro-card rounded-2xl p-4 space-y-4 border-amber-500/30">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div>
+              <h2 class="text-base font-extrabold text-amber-400">ماشین‌حساب موتور واحد ریسک، کارمزد و سیو سود پله‌ای</h2>
+              <p class="text-xs text-slate-400">
+                تغییر هر ورودی در این بخش، هم‌زمان باکس R:R روی چارت و تیکت بالای صفحه را بروزرسانی می‌کند
+              </p>
+            </div>
+            <button type="button" id="fillFromChartBtn" class="touch-btn px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold">
+              🎯 بازنشانی به قیمت ورود و استاپ ساختاری چارت
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label for="calcBalance" class="block text-slate-300 mb-1 font-semibold">کل سرمایه اکانت (USDT):</label>
+              <input id="calcBalance" type="number" value="1000" min="10" step="50" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold ltr-num focus:border-amber-500 focus:outline-none" />
+            </div>
+            <div>
+              <label for="calcRiskPct" class="block text-slate-300 mb-1 font-semibold">درصد ریسک مجاز (۰.۵٪ تا ۲٪):</label>
+              <input id="calcRiskPct" type="number" value="1.0" min="0.1" max="10" step="0.25" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-amber-400 font-bold ltr-num focus:border-amber-500 focus:outline-none" />
+            </div>
+            <div>
+              <label for="calcLeverage" class="block text-slate-300 mb-1 font-semibold">اهرم ایزوله (پیشنهاد ≤10x، سقف 20x):</label>
+              <input id="calcLeverage" type="number" value="10" min="1" max="20" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-cyan-400 font-bold ltr-num focus:border-amber-500 focus:outline-none" />
+            </div>
+            <div>
+              <label for="calcEntryPrice" class="block text-slate-300 mb-1 font-semibold">قیمت ورود (Entry - قابل درگ روی چارت):</label>
+              <input id="calcEntryPrice" type="number" value="" placeholder="خودکار از موتور" step="any" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold ltr-num focus:border-amber-500 focus:outline-none" />
+            </div>
+            <div>
+              <label for="calcStopPrice" class="block text-slate-300 mb-1 font-semibold">قیمت حد ضرر (SL - قابل درگ روی چارت):</label>
+              <input id="calcStopPrice" type="number" value="" placeholder="خودکار از موتور" step="any" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-rose-400 font-bold ltr-num focus:border-amber-500 focus:outline-none" />
+            </div>
+            <div>
+              <label for="calcWinRate" class="block text-slate-300 mb-1 font-semibold">وین‌ریت استراتژی برای Expectancy (%):</label>
+              <input id="calcWinRate" type="number" value="52" min="5" max="95" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-emerald-400 font-bold ltr-num focus:border-amber-500 focus:outline-none" />
+            </div>
+            <div>
+              <label for="calcFeePct" class="block text-slate-300 mb-1 font-semibold">کارمزد رفت‌وبرگشت صرافی (%):</label>
+              <input id="calcFeePct" type="number" value="0.08" min="0" max="1" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-300 font-bold ltr-num focus:border-amber-500 focus:outline-none" />
+            </div>
+            <div>
+              <label for="calcSlippagePct" class="block text-slate-300 mb-1 font-semibold">اسلیپیج تخمینی اجرای مارکت (%):</label>
+              <input id="calcSlippagePct" type="number" value="0.03" min="0" max="1" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-300 font-bold ltr-num focus:border-amber-500 focus:outline-none" />
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <div>
+                <label for="calcTotalTradesN" class="block text-slate-300 mb-1 font-semibold">تعداد ترید (n):</label>
+                <input id="calcTotalTradesN" type="number" value="100" min="10" max="1000" step="10" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-white font-bold ltr-num" />
+              </div>
+              <div>
+                <label for="calcStreakK" class="block text-slate-300 mb-1 font-semibold">باخت متوالی (k):</label>
+                <input id="calcStreakK" type="number" value="5" min="2" max="20" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-rose-400 font-bold ltr-num" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Engine Warnings Banner (Liquidation before SL, Stop > 3*ATR, Leverage > 10x) -->
+          <div id="liqBeforeStopWarning" role="alert" class="hidden p-3 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-200 text-xs font-extrabold space-y-1"></div>
+
+          <!-- Primary Outputs Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-950/90 p-3.5 rounded-2xl border border-slate-800 text-center">
+            <div>
+              <div class="text-[11px] text-slate-400">مقدار دلاری ریسک</div>
+              <div id="outRiskDollar" class="text-base font-black text-rose-400 ltr-num mt-1">--</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400">حجم کل پوزیشن (پس از کسر کارمزد)</div>
+              <div id="outPosSize" class="text-base font-black text-white ltr-num mt-1">--</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400">مارجین درگیر (Isolated)</div>
+              <div id="outMarginUsed" class="text-base font-black text-amber-400 ltr-num mt-1">--</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400">سقف اهرم ایمن پیشنهادی</div>
+              <div id="outMaxSafeLev" class="text-base font-black text-emerald-400 ltr-num mt-1">--</div>
+            </div>
+          </div>
+
+          <!-- Secondary Quantitative Metrics: Net R, Breakeven WinRate, Expectancy, Setup Quality -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-center text-xs">
+            <div>
+              <div class="text-[11px] text-slate-400">R خالص بعد از کارمزد و اسلیپیج</div>
+              <div id="outNetR" class="text-sm font-black text-cyan-300 ltr-num mt-0.5">--</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400">وین‌ریت سربه‌سر (Breakeven)</div>
+              <div id="outBreakevenWr" class="text-sm font-black text-amber-300 ltr-num mt-0.5">--</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400">امید ریاضی (Expectancy)</div>
+              <div id="outExpectancyR" class="text-sm font-black text-emerald-400 ltr-num mt-0.5">--</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-400">کیفیت ستاپ (بر اساس مانع اول)</div>
+              <div id="outSetupQuality" class="text-sm font-black text-white mt-0.5">--</div>
+            </div>
+          </div>
+
+          <!-- Staged Profit Taking Breakdown (30% at TP1, 50% at TP2, 20% at TP3) -->
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
+            <div class="font-bold text-emerald-400">پله‌های سیو سود بر اساس موانع واقعی (۳۰٪ در TP1، ۵۰٪ در TP2، ۲۰٪ در TP3):</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                <div class="text-slate-400 text-[11px]">تارگت اول (TP1 - اولین مانع واقعی)</div>
+                <div id="outTp1Price" class="font-bold text-white ltr-num mt-0.5">--</div>
+                <div id="outTp1Profit" class="text-[11px] text-emerald-400 mt-0.5">--</div>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                <div class="text-slate-400 text-[11px]">تارگت دوم (TP2 - مانع دوم)</div>
+                <div id="outTp2Price" class="font-bold text-emerald-400 ltr-num mt-0.5">--</div>
+                <div id="outTp2Profit" class="text-[11px] text-amber-300 mt-0.5">--</div>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                <div class="text-slate-400 text-[11px]">تارگت سوم (TP3 - سایکل/تریل)</div>
+                <div id="outTp3Price" class="font-bold text-cyan-400 ltr-num mt-0.5">--</div>
+                <div id="outTp3Profit" class="text-[11px] text-slate-300 mt-0.5">--</div>
+              </div>
+            </div>
+            <ul id="engineReasonsList" class="text-[11px] text-slate-400 space-y-1 pt-1 border-t border-slate-800"></ul>
+          </div>
+        </div>
+
+        <!-- Right 5 Cols: Markov Streak Math + Upgraded Journal with Equity Curve -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="pro-card rounded-2xl p-4 space-y-3">
+            <h3 class="text-sm font-extrabold text-rose-400">احتمال زنجیره باخت (Markov DP) و لیکوئید ایزوله</h3>
+            <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span class="text-slate-400">احتمال حداقل k استاپ متوالی در n ترید:</span>
+                <strong id="outStreak5Prob" class="ltr-num text-amber-400">--</strong>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">افت سرمایه پس از k استاپ متوالی:</span>
+                <strong id="outDrawdown5" class="ltr-num text-emerald-400">--</strong>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">قیمت لیکوئید شدن ایزوله:</span>
+                <strong id="outApproxLiqPrice" class="ltr-num text-rose-300">--</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upgraded Journal with Outcome, Exit Price, Realized R, Notes, Cumulative Stats & Equity Curve -->
+          <div class="pro-card rounded-2xl p-4 space-y-3 border-cyan-500/30">
+            <div class="flex flex-wrap items-center justify-between gap-1.5">
+              <h3 class="text-sm font-extrabold text-cyan-400">📓 ژورنال معاملاتی، آمار تجمیعی و نمودار Equity</h3>
+              <div class="flex flex-wrap items-center gap-1">
+                <button type="button" id="exportJournalCsvBtn" class="touch-btn px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold">
+                  ⬇️ خروجی CSV
+                </button>
+                <button type="button" id="exportBackupJsonBtn" class="touch-btn px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold">
+                  💾 پشتیبان JSON
+                </button>
+                <label for="importBackupJsonInput" class="touch-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-bold cursor-pointer">
+                  📂 بازیابی JSON
+                </label>
+                <input id="importBackupJsonInput" type="file" accept="application/json" class="hidden" />
+              </div>
+            </div>
+
+            <!-- Cumulative Journal Stats -->
+            <div class="grid grid-cols-4 gap-1.5 text-center text-[11px] bg-slate-950 p-2 rounded-xl border border-slate-800">
+              <div>
+                <div class="text-slate-400">وین‌ریت</div>
+                <div id="jStatWinRate" class="font-bold text-emerald-400 ltr-num mt-0.5">0%</div>
+              </div>
+              <div>
+                <div class="text-slate-400">میانگین R</div>
+                <div id="jStatAvgR" class="font-bold text-cyan-300 ltr-num mt-0.5">0R</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Expectancy</div>
+                <div id="jStatExpectancy" class="font-bold text-amber-300 ltr-num mt-0.5">0R</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Max DD</div>
+                <div id="jStatMaxDd" class="font-bold text-rose-400 ltr-num mt-0.5">0R</div>
+              </div>
+            </div>
+
+            <!-- Journal Equity Curve in R -->
+            <div class="relative h-20 w-full bg-slate-950 rounded-xl border border-slate-800 p-1">
+              <canvas id="journalEquityCanvas" class="w-full h-full block"></canvas>
+            </div>
+
+            <!-- Journal Entry Form -->
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <label for="journalOrderType" class="block text-slate-400 text-[11px] mb-0.5">نوع اردر ورود:</label>
+                <select id="journalOrderType" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white">
+                  <option value="Stop-Buy / Stop-Sell (Market)">Stop-Buy / Stop-Sell (Market)</option>
+                  <option value="Limit Order">Limit Order</option>
+                  <option value="Market Direct">Market Direct</option>
+                </select>
+              </div>
+              <div>
+                <label for="journalOutcomeSelect" class="block text-slate-400 text-[11px] mb-0.5">نتیجه معامله:</label>
+                <select id="journalOutcomeSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-amber-300 font-bold">
+                  <option value="OPEN" selected>باز (در جریان)</option>
+                  <option value="WIN">برد (Win)</option>
+                  <option value="BE">سربه‌سر (Breakeven)</option>
+                  <option value="LOSS">باخت (Loss -> +۱ استاپ روزانه)</option>
+                </select>
+              </div>
+              <div>
+                <label for="journalExitPriceInput" class="block text-slate-400 text-[11px] mb-0.5">قیمت خروج (اختیاری):</label>
+                <input id="journalExitPriceInput" type="number" step="any" placeholder="قیمت بسته شدن..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white ltr-num" />
+              </div>
+              <div>
+                <label for="journalMood" class="block text-slate-400 text-[11px] mb-0.5">وضعیت تمرکز هنگام ورود:</label>
+                <select id="journalMood" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white">
+                  <option value="آرام و طبق پلن مکتوب">آرام و طبق پلن مکتوب ✓</option>
+                  <option value="متمرکز">متمرکز</option>
+                  <option value="دارای تردید / عجله">دارای تردید / عجله ⚠️</option>
+                </select>
+              </div>
+              <div class="col-span-2">
+                <input id="journalNoteInput" type="text" placeholder="یادداشت معامله (دلیل ورود، رفتار حجم، درس آموخته‌شده...)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-xs" />
+              </div>
+            </div>
+
+            <button type="button" id="logTradeBtn" class="touch-btn w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs py-2.5 rounded-xl transition">
+              + ثبت پوزیشن فعلی در ژورنال معاملاتی
+            </button>
+
+            <div id="journalEntriesList" class="space-y-2 max-h-60 overflow-y-auto text-[11px]"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- GITHUB PAGES GUIDE & SOURCE EXPORT MODAL -->
+  <div id="githubModal" role="dialog" aria-modal="true" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3">
+    <div class="pro-card w-full max-w-3xl rounded-2xl border border-amber-500/40 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800">
+        <span class="text-amber-400 font-black text-base">🚀 راهنمای استقرار GitHub Pages (معماری ماژولار نسخه ۶)</span>
+        <button type="button" id="closeGithubModalBtn" class="touch-btn text-slate-400 hover:text-white text-sm font-bold px-3 py-1 rounded-lg bg-slate-800">
+          ✕ بستن
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto space-y-4 text-xs sm:text-sm leading-relaxed text-slate-200">
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-amber-200 text-xs">
+          در نسخه ۶، کدها هم به‌صورت <strong>تک‌فایل یکپارچه</strong> (مناسب اجرای فوری) و هم به‌صورت <strong>ماژول‌های تفکیک‌شده</strong> (<code class="ltr-num">indicators.js</code>، <code class="ltr-num">tradeEngine.js</code>، <code class="ltr-num">storage.js</code>، <code class="ltr-num">data.js</code>، <code class="ltr-num">chart.js</code>، <code class="ltr-num">ui.js</code>، <code class="ltr-num">sw.js</code>) آماده شده‌اند.
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          <button type="button" id="copyHtmlCodeBtn" class="touch-btn bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-3.5 py-2 rounded-xl transition">
+            📋 کپی کل کد index.html
+          </button>
+          <button type="button" id="downloadHtmlFileBtn" class="touch-btn bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs px-3.5 py-2 rounded-xl transition">
+            ⬇️ دانلود مستقیم فایل index.html
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM MOBILE-FIRST NAVIGATION BAR (Touch Targets >= 48px) -->
+  <nav role="tablist" aria-label="ناوبری بخش‌های اصلی" class="fixed bottom-0 right-0 left-0 z-40 glass-bar border-t border-slate-800/90 px-2 py-1" style="padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px));">
+    <div class="max-w-3xl mx-auto grid grid-cols-5 gap-1">
+      <button type="button" role="tab" aria-selected="true" data-target="view-radar" class="tab-btn active flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 transition">
+        <span class="text-base" aria-hidden="true">📊</span>
+        <span class="text-[11px] sm:text-xs font-bold mt-0.5">رادار و چارت</span>
+      </button>
+      <button type="button" role="tab" aria-selected="false" data-target="view-scenario" class="tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 transition">
+        <span class="text-base" aria-hidden="true">📝</span>
+        <span class="text-[11px] sm:text-xs font-bold mt-0.5">سناریو و چک‌لیست</span>
+      </button>
+      <button type="button" role="tab" aria-selected="false" data-target="view-orderbook" class="tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 transition">
+        <span class="text-base" aria-hidden="true">🧱</span>
+        <span class="text-[11px] sm:text-xs font-bold mt-0.5">اردربوک و سشن</span>
+      </button>
+      <button type="button" role="tab" aria-selected="false" data-target="view-macro" class="tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 transition">
+        <span class="text-base" aria-hidden="true">🧭</span>
+        <span class="text-[11px] sm:text-xs font-bold mt-0.5">دامیننس و BTC</span>
+      </button>
+      <button type="button" role="tab" aria-selected="false" data-target="view-calculator" class="tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-400 transition">
+        <span class="text-base" aria-hidden="true">🛡️</span>
+        <span class="text-[11px] sm:text-xs font-bold mt-0.5">مدیریت سرمایه</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MODULAR SCRIPTS -->
+  <script src="./indicators.js"></script>
+  <script src="./tradeEngine.js"></script>
+  <script src="./storage.js"></script>
+  <script src="./data.js"></script>
+  <script src="./chart.js"></script>
+  <script src="./ui.js"></script>
+</body>
+</html>
